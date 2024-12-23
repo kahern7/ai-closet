@@ -52,25 +52,26 @@ class ClosetDesigner:
         return arrangement
 
     def visualise_closet(self, arrangement):
-        fig, ax = plt.subplots(figsize=(8, 8))
+        fig, ax = plt.subplots(figsize=(10, 8))
         colors = {"drawers": "orange", "hanging": "blue", "shelves": "green"}
         col_width = self.column_width
+        column_positions = [(col * col_width - self.width / 2) for col in range(self.columns)]  # Centred x-coordinates
 
-        for col in range(self.columns):
+        for col_index, x_position in enumerate(column_positions):
             y_start = 0
             for (column, component), height in arrangement.items():
-                if column == col:
+                if column == col_index:
                     ax.bar(
-                        col * col_width,
+                        x_position,
                         height,
-                        width=col_width,
+                        width=col_width * 0.8,  # Slightly narrow bars for better spacing
                         bottom=y_start,
                         color=colors.get(component, "grey"),
                         edgecolor="black",
                         label=component if y_start == 0 else ""
                     )
                     ax.text(
-                        col * col_width + col_width / 2,
+                        x_position,
                         y_start + height / 2,
                         f"{component}\n{height} in",
                         ha="center",
@@ -80,10 +81,10 @@ class ClosetDesigner:
                     )
                     y_start += height
 
-        ax.set_xlim(0, self.width)
+        ax.set_xlim(-self.width / 2, self.width / 2)
         ax.set_ylim(0, self.height)
-        ax.set_title("Closet Space Arrangement")
-        ax.set_xlabel("Width (inches)")
+        ax.set_title("Symmetrical Closet Space Arrangement")
+        ax.set_xlabel("Width (inches, centred)")
         ax.set_ylabel("Height (inches)")
         ax.legend(loc="upper right")
         plt.grid(visible=True, linestyle="--", linewidth=0.5)
