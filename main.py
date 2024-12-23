@@ -9,7 +9,4 @@ if __name__ == "__main__":
 
     designer = ClosetDesigner()
     arrangement = designer.design_closet(percentages)
-
-    # Print the arrangement
-    for location, size in arrangement.items():
-        print(f"Column {location[0]}, Component: {location[1]}, Height Allocated: {size} inches")
+    designer.visualise_closet(arrangement)
