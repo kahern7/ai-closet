@@ -21,7 +21,6 @@ class ClosetDesigner:
         total_columns = self.columns
 
         for component, percentage in percentages.items():
-            # int((percentage / 100) * total_height)
             allocations[component] = int((percentage / 100) * total_height * total_columns) # gives maxmimum height allowed for each component across all columns
 
         return allocations
