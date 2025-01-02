@@ -45,7 +45,7 @@ class ClosetOptimizer:
         if total_space_used > self.height * self.columns:
             fitness -= 100  # Heavy penalty for exceeding space
 
-         # Ensure space does not exceed constraints for each column
+        # Ensure space does not exceed constraints for each column
         num_components = len(self.components)
         for col in range(self.columns):
             column_total = sum(individual[col * num_components:(col + 1) * num_components])

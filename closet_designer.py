@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class ClosetDesigner:
-    def __init__(self, width=100, height=96, columns=4):
+    def __init__(self, width=609, height=2196, columns=4):
         self.width = width
         self.height = height
         self.columns = columns
@@ -118,11 +118,11 @@ if __name__ == "__main__":
 
     # set max size for each component (inches)
     max_size = {
-        "drawers": 10,
-        "hanging": 20,
-        "shelves": 5
+        "drawers": 234,
+        "hanging": 29*3.2,
+        "shelves": 25.6,
     }
 
-    designer = ClosetDesigner()
+    designer = ClosetDesigner(columns=8)
     arrangement = designer.design_closet(percentages)
     designer.visualise_closet(arrangement)
