@@ -26,7 +26,7 @@ class ClosetDesigner:
 
         return allocations
     
-    def allocate_comps(self, allocations, arrangement, comp_filter=None, col_range=None):
+    def allocate_comps(self, allocations, arrangement, comp_filter=None, col_range=None, even_dist=False):
         # initialise variables
         if col_range is None:
             col_range = range(self.columns)
@@ -39,8 +39,12 @@ class ClosetDesigner:
         for component, comp_height in comp_dict.items():
             self.comp_finish.remove(component) # set current component as finished
             for col in col_range:
-                if comp_height - comp_size[component] > 0 and self.col_height[col] - comp_size[component] > 0: # check for component finished
-                    allocation = comp_size[component] * (min(comp_height, self.col_height[col]) // comp_size[component])
+                # check if component must be evenly distributed
+                if even_dist:
+                    comp_height = comp_dict[component] / len(col_range) # ensure same height available for each suitable column
+                # if component not finished then allocate to column
+                if comp_height - comp_size[component] > 0 and self.col_height[col] - comp_size[component] > 0:
+                    allocation = comp_size[component] * (min(comp_height, self.col_height[col]) // comp_size[component]) # set allocation as max number of full components that fit
                     arrangement[(col, component)] = allocation
                     comp_height -= allocation
                     self.col_height[col] -= allocation
@@ -54,7 +58,7 @@ class ClosetDesigner:
         self.comp_finish = [k for k in allocations.keys()]
         
         # Allocate drawers to middle columns
-        arrangement = self.allocate_comps(allocations, arrangement, "drawers", middle_columns)
+        arrangement = self.allocate_comps(allocations, arrangement, "drawers", middle_columns, True)
         
         # Allocate other components to remaining space
         arrangement = self.allocate_comps(allocations, arrangement)
