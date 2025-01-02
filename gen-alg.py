@@ -45,6 +45,13 @@ class ClosetOptimizer:
         if total_space_used > self.height * self.columns:
             fitness -= 100  # Heavy penalty for exceeding space
 
+         # Ensure space does not exceed constraints for each column
+        num_components = len(self.components)
+        for col in range(self.columns):
+            column_total = sum(individual[col * num_components:(col + 1) * num_components])
+            if column_total > self.height:
+                fitness -= (column_total - self.height) * 10  # Penalise exceeding column space heavily
+
         return fitness,
 
     def optimise(self, population_size=50, generations=100, cxpb=0.5, mutpb=0.2):
@@ -108,7 +115,7 @@ if __name__ == "__main__":
     COMPONENTS = ["drawers", "shelves", "hanging"]
 
     # User preferences (% allocation)
-    preferences = {"drawers": 50, "shelves": 30, "hanging": 20}
+    preferences = {"drawers": 35, "shelves": 15, "hanging": 50}
 
     optimizer = ClosetOptimizer(WIDTH, HEIGHT, COLUMNS, COMPONENTS, preferences)
     best_individual = optimizer.optimise()
