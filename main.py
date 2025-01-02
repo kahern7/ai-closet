@@ -1,19 +1,24 @@
-from closet_designer import ClosetDesigner
+from gui import ClosetOptimiserGUI
+import tkinter as tk
 
 if __name__ == "__main__":
-    percentages = {
-        "drawers": 30,
-        "hanging": 50,
-        "shelves": 20
-    }
+    root = tk.Tk()
+    app = ClosetOptimiserGUI(root)
+    root.mainloop()
 
-    # set max size for each component (inches)
-    max_size = {
-        "drawers": 10,
-        "hanging": 20,
-        "shelves": 5
-    }
+    # percentages = {
+    #     "drawers": 30,
+    #     "hanging": 50,
+    #     "shelves": 20
+    # }
 
-    designer = ClosetDesigner()
-    arrangement = designer.design_closet(percentages)
-    designer.visualise_closet(arrangement)
+    # # set max size for each component (inches)
+    # max_size = {
+    #     "drawers": 10,
+    #     "hanging": 20,
+    #     "shelves": 5
+    # }
+
+    # designer = ClosetDesigner()
+    # arrangement = designer.design_closet(percentages)
+    # designer.visualise_closet(arrangement)

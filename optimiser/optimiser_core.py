@@ -3,36 +3,36 @@ import matplotlib.pyplot as plt
 import random
 
 
-class ClosetOptimizer:
-    def __init__(self, width, height, columns, components, preferences):
+class ClosetOptimiser:
+    def __init__(self, width, height, preferences):
         self.width = width
         self.height = height
-        self.columns = columns
-        self.column_width = width / columns
-        self.components = components
         self.preferences = preferences
-
-        # Create Fitness and Individual classes
+        self.columns = 4
+        self.toolbox = self.setup_toolbox()
+    
+    def setup_toolbox(self):
+        # Define the DEAP toolbox here
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMax)
 
-        # Define the toolbox
-        self.toolbox = base.Toolbox()
-        self.toolbox.register("attr_height", random.randint, 10, height)
-        self.toolbox.register("individual", tools.initRepeat, creator.Individual, 
-                               self.toolbox.attr_height, columns * len(components))
-        self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
-        self.toolbox.register("evaluate", self.evaluate)
-        self.toolbox.register("mate", tools.cxTwoPoint)
-        self.toolbox.register("mutate", tools.mutUniformInt, low=10, up=height, indpb=0.1)
-        self.toolbox.register("select", tools.selTournament, tournsize=3)
+        toolbox = base.Toolbox()
+        toolbox.register("attr_height", random.randint, 10, self.height)
+        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_height, self.columns * 3)
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        toolbox.register("evaluate", self.evaluate)
+        toolbox.register("mate", tools.cxTwoPoint)
+        toolbox.register("mutate", tools.mutUniformInt, low=10, up=self.height, indpb=0.1)
+        toolbox.register("select", tools.selTournament, tournsize=3)
+        return toolbox
 
     def evaluate(self, individual):
         total_space_used = sum(individual)
         component_allocation = {
             "drawers": sum(individual[0:self.columns]),
             "shelves": sum(individual[self.columns:2*self.columns]),
-            "hanging": sum(individual[2*self.columns:])
+            "short_hanging": sum(individual[2*self.columns:3*self.columns]),
+            "long_hanging": sum(individual[3*self.columns:])
         }
 
         # Calculate fitness based on adherence to user preferences
@@ -46,11 +46,10 @@ class ClosetOptimizer:
             fitness -= 100  # Heavy penalty for exceeding space
 
         # Ensure space does not exceed constraints for each column
-        num_components = len(self.components)
         for col in range(self.columns):
-            column_total = sum(individual[col * num_components:(col + 1) * num_components])
-            if column_total > self.height:
-                fitness -= (column_total - self.height) * 10  # Penalise exceeding column space heavily
+            column_height = sum(individual[col::self.columns])
+            if column_height > self.height:
+                fitness -= 100  # Penalise exceeding column space heavily
 
         return fitness,
 
@@ -106,41 +105,41 @@ class ClosetOptimizer:
                 arrangement[(col, component)] = height
         return arrangement
 
-    def visualise_closet(self, arrangement):
-        fig, ax = plt.subplots(figsize=(10, 8))
-        colors = {"drawers": "orange", "hanging": "blue", "shelves": "green"}
-        column_positions = [((col + 0.5) * self.column_width - self.width / 2) for col in range(self.columns)]
+    # def visualise_closet(self, arrangement):
+    #     fig, ax = plt.subplots(figsize=(10, 8))
+    #     colors = {"drawers": "orange", "hanging": "blue", "shelves": "green"}
+    #     column_positions = [((col + 0.5) * self.column_width - self.width / 2) for col in range(self.columns)]
 
-        for col_index, x_position in enumerate(column_positions):
-            y_start = 0
-            for (column, component), height in arrangement.items():
-                if column == col_index:
-                    ax.bar(
-                        x_position,
-                        height,
-                        width=self.column_width, # * 0.8,
-                        bottom=y_start,
-                        color=colors.get(component, "grey"),
-                        edgecolor="black"
-                    )
-                    ax.text(
-                        x_position,
-                        y_start + height / 2,
-                        f"{component}\n{height} in",
-                        ha="center",
-                        va="center",
-                        color="white",
-                        fontsize=10
-                    )
-                    y_start += height
+    #     for col_index, x_position in enumerate(column_positions):
+    #         y_start = 0
+    #         for (column, component), height in arrangement.items():
+    #             if column == col_index:
+    #                 ax.bar(
+    #                     x_position,
+    #                     height,
+    #                     width=self.column_width, # * 0.8,
+    #                     bottom=y_start,
+    #                     color=colors.get(component, "grey"),
+    #                     edgecolor="black"
+    #                 )
+    #                 ax.text(
+    #                     x_position,
+    #                     y_start + height / 2,
+    #                     f"{component}\n{height} in",
+    #                     ha="center",
+    #                     va="center",
+    #                     color="white",
+    #                     fontsize=10
+    #                 )
+    #                 y_start += height
 
-        ax.set_xlim(-self.width / 2, self.width / 2)
-        ax.set_ylim(0, self.height)
-        ax.set_title("Closet Space Arrangement")
-        ax.set_xlabel("Width (inches, centred)")
-        ax.set_ylabel("Height (inches)")
-        plt.grid(visible=False)
-        plt.show()
+    #     ax.set_xlim(-self.width / 2, self.width / 2)
+    #     ax.set_ylim(0, self.height)
+    #     ax.set_title("Closet Space Arrangement")
+    #     ax.set_xlabel("Width (inches, centred)")
+    #     ax.set_ylabel("Height (inches)")
+    #     plt.grid(visible=False)
+    #     plt.show()
 
 
 # Example usage
@@ -154,7 +153,8 @@ if __name__ == "__main__":
     # User preferences (% allocation)
     preferences = {"drawers": 35, "shelves": 15, "hanging": 50}
 
-    optimizer = ClosetOptimizer(WIDTH, HEIGHT, COLUMNS, COMPONENTS, preferences)
+    optimizer = ClosetOptimiser(WIDTH, HEIGHT, COLUMNS, COMPONENTS, preferences)
     best_individual = optimizer.optimise()
     arrangement = optimizer.map_individual_to_arrangement(best_individual)
-    optimizer.visualise_closet(arrangement)
+    # optimizer.visualise_closet(arrangement)
+    plt.show()
