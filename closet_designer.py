@@ -7,8 +7,8 @@ class ClosetDesigner:
         self.height = height
         self.columns = columns
         self.column_width = width / columns
-        self.grid = np.zeros((columns, int(height)))  # Initialise an empty grid
-        self.comp_size = {k: v for k, v in max_size.items()}
+        self.grid = np.zeros((columns, int(height)))  # initialise an empty grid
+        self.comp_size = {k: v for k, v in max_size.items()} # set size of each component
 
     def validate_percentages(self, percentages):
         if sum(percentages.values()) != 100:
@@ -26,50 +26,38 @@ class ClosetDesigner:
 
         return allocations
     
-    # def allocate_comps(self, allocations, arrangement, col_height, comp_filter=None, col_range=None):
-    #     # initialise variables
-    #     if col_range is None:
-    #         col_range = range(self.columns)
-    #     comp_size = self.comp_size
+    def allocate_comps(self, allocations, arrangement, comp_filter=None, col_range=None):
+        # initialise variables
+        if col_range is None:
+            col_range = range(self.columns)
+        if comp_filter is None:
+            comp_filter = self.comp_finish
+        comp_size = self.comp_size
 
-    #     # allocate components to remaining space
-    #     comp_dict = {k: v for k, v in allocations.items() if k != comp_filter}
-    #     for component, comp_height in comp_dict.items():
-    #         for col in col_range:
-    #             if comp_height - comp_size[component] > 0 and col_height[col] - comp_size[component] > 0:
-    #                 allocation = comp_size[component] * (min(comp_height, col_height[col]) // comp_size[component])
-    #                 arrangement[(col, component)] = allocation
-    #                 comp_height -= allocation
-    #                 col_height[col] -= allocation
+        # allocate components to remaining space
+        comp_dict = {k: v for k, v in allocations.items() if k in comp_filter} # create dict with required components
+        for component, comp_height in comp_dict.items():
+            self.comp_finish.remove(component) # set current component as finished
+            for col in col_range:
+                if comp_height - comp_size[component] > 0 and self.col_height[col] - comp_size[component] > 0: # check for component finished
+                    allocation = comp_size[component] * (min(comp_height, self.col_height[col]) // comp_size[component])
+                    arrangement[(col, component)] = allocation
+                    comp_height -= allocation
+                    self.col_height[col] -= allocation
         
-    #     return arrangement
+        return arrangement
 
     def arrange_components(self, allocations):
         arrangement = {}
-        middle_columns = [1, 2]  # Middle columns in a 4-column layout
-        col_height = {col: self.height for col in range(self.columns)}
-        comp_size = self.comp_size
+        middle_columns = ([0,1] if self.columns == 2 else [i for i in range(1, self.columns - 1)] or [0])  # find middle columns, if no middle then default to column 0 or 0,1 for 1 and 2 columns respectively
+        self.col_height = {col: self.height for col in range(self.columns)}
+        self.comp_finish = [k for k in allocations.keys()]
         
         # Allocate drawers to middle columns
-        drawer_height = allocations.get("drawers", 0)
-        for col in middle_columns:
-            # ensure drawer allocation and column allocation available
-            if drawer_height - comp_size["drawers"] > 0 and col_height[col] - comp_size["drawers"] > 0:
-                # allocation is max number of comps permissible in space
-                allocation = comp_size["drawers"] * (min(drawer_height, col_height[col]) // comp_size["drawers"])
-                arrangement[(col, "drawers")] = allocation
-                drawer_height -= allocation
-                col_height[col] -= allocation
+        arrangement = self.allocate_comps(allocations, arrangement, "drawers", middle_columns)
         
         # Allocate other components to remaining space
-        other_components = {k: v for k, v in allocations.items() if k != "drawers"}
-        for component, comp_height in other_components.items():
-            for col in range(self.columns):
-                if comp_height - comp_size[component] > 0 and col_height[col] - comp_size[component] > 0:
-                    allocation = comp_size[component] * (min(comp_height, col_height[col]) // comp_size[component])
-                    arrangement[(col, component)] = allocation
-                    comp_height -= allocation
-                    col_height[col] -= allocation
+        arrangement = self.allocate_comps(allocations, arrangement)
         
         return arrangement
 
@@ -82,10 +70,7 @@ class ClosetDesigner:
         fig, ax = plt.subplots(figsize=(10, 8))
         colors = {"drawers": "orange", "hanging": "blue", "shelves": "green"}
         col_width = self.column_width
-        if self.columns % 2 == 0:
-            column_positions = [((col + 0.5) * col_width - self.width / 2) for col in range(self.columns)] # even number of columns requires middle columns to be offset from 0
-        else:
-            column_positions = [(col * col_width - self.width / 2) for col in range(self.columns)]
+        column_positions = [((col + 0.5) * col_width - self.width / 2) for col in range(self.columns)]
 
         for col_index, x_position in enumerate(column_positions):
             y_start = 0
