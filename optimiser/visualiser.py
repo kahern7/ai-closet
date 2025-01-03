@@ -21,7 +21,7 @@ def visualise_closet(arrangement, width, height, columns):
                 ax.text(
                     x_position,
                     y_start + comp_height / 2,
-                    f"{component}\n{comp_height} in",
+                    f"{component}\n{comp_height} mm",
                     ha="center",
                     va="center",
                     color="white",

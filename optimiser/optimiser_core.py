@@ -48,10 +48,11 @@ class ClosetOptimiser:
             fitness -= 100  # Heavy penalty for exceeding space
 
         # Ensure space does not exceed constraints for each column
+        num_components = len(self.preferences.keys())
         for col in range(self.columns):
-            column_height = sum(individual[col::self.columns])
+            column_height = sum(individual[col * num_components:(col + 1) * num_components]) # [col::self.columns] seems to not work
             if column_height > self.height:
-                fitness -= 100  # Penalise exceeding column space heavily
+                fitness -= 500 + 10 * (column_height - self.height)  # Penalise exceeding column space heavily
 
         return fitness,
 
