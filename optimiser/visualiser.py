@@ -1,16 +1,16 @@
 import matplotlib.pyplot as plt
 
-def map_individual_to_arrangement(self, individual):
+def map_individual_to_arrangement(individual, columns, preferences):
     arrangement = {}
-    num_components = len(self.components)
-    for col in range(self.columns):
-        for comp_index, component in enumerate(self.components):
+    num_components = len(preferences.keys())
+    for col in range(columns):
+        for comp_index, component in enumerate(preferences.keys()):
             height = individual[col * num_components + comp_index]
             arrangement[(col, component)] = height
     return arrangement
 
-def visualise_closet(arrangement, width, height, columns):
-    arrangement = map_individual_to_arrangement(arrangement)
+def visualise_closet(best_arrangement, width, height, columns, preferences):
+    arrangement = map_individual_to_arrangement(best_arrangement, columns, preferences)
     fig, ax = plt.subplots(figsize=(10, 8))
     colours = {"drawers": "orange", "shelves": "green", "short_hanging": "blue", "long_hanging": "purple"}
     col_width = width / columns

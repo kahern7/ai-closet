@@ -52,4 +52,4 @@ class ClosetOptimiserGUI:
         best_arrangement = optimiser.optimise()
 
         # Visualise results
-        visualise_closet(best_arrangement, width, height, optimiser.columns)
+        visualise_closet(best_arrangement, width, height, optimiser.columns, optimiser.preferences)
