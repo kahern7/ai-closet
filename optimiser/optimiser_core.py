@@ -9,6 +9,7 @@ class ClosetOptimiser:
         self.height = height
         self.preferences = preferences
         self.columns = 4
+        self.components = ["shelves", "drawers", "short_hanging", "long_hanging"]
         self.toolbox = self.setup_toolbox()
     
     def setup_toolbox(self):
@@ -18,7 +19,7 @@ class ClosetOptimiser:
 
         toolbox = base.Toolbox()
         toolbox.register("attr_height", random.randint, 10, self.height)
-        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_height, self.columns * 3)
+        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_height, self.columns * len(self.components))
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
         toolbox.register("evaluate", self.evaluate)
         toolbox.register("mate", tools.cxTwoPoint)
@@ -27,9 +28,10 @@ class ClosetOptimiser:
         return toolbox
 
     def evaluate(self, individual):
+        # calculate fitness
         total_space_used = sum(individual)
         component_allocation = {
-            "drawers": sum(individual[0:self.columns]),
+            "drawers": sum(individual[:self.columns]),
             "shelves": sum(individual[self.columns:2*self.columns]),
             "short_hanging": sum(individual[2*self.columns:3*self.columns]),
             "long_hanging": sum(individual[3*self.columns:])
@@ -97,50 +99,24 @@ class ClosetOptimiser:
         plt.grid(True)
 
     def map_individual_to_arrangement(self, individual):
+        """Convert the individual into a dictionary mapping columns to components and their heights."""
         arrangement = {}
         num_components = len(self.components)
+
+        if len(individual) != self.columns * num_components:
+            raise ValueError(
+                f"Mismatch between individual length ({len(individual)}) and expected size ({self.columns * num_components})."
+            )
+
         for col in range(self.columns):
             for comp_index, component in enumerate(self.components):
-                height = individual[col * num_components + comp_index]
-                arrangement[(col, component)] = height
+                # Safely calculate the index
+                index = col * num_components + comp_index
+                if index < len(individual):
+                    height = individual[index]
+                    arrangement[(col, component)] = height
+
         return arrangement
-
-    # def visualise_closet(self, arrangement):
-    #     fig, ax = plt.subplots(figsize=(10, 8))
-    #     colors = {"drawers": "orange", "hanging": "blue", "shelves": "green"}
-    #     column_positions = [((col + 0.5) * self.column_width - self.width / 2) for col in range(self.columns)]
-
-    #     for col_index, x_position in enumerate(column_positions):
-    #         y_start = 0
-    #         for (column, component), height in arrangement.items():
-    #             if column == col_index:
-    #                 ax.bar(
-    #                     x_position,
-    #                     height,
-    #                     width=self.column_width, # * 0.8,
-    #                     bottom=y_start,
-    #                     color=colors.get(component, "grey"),
-    #                     edgecolor="black"
-    #                 )
-    #                 ax.text(
-    #                     x_position,
-    #                     y_start + height / 2,
-    #                     f"{component}\n{height} in",
-    #                     ha="center",
-    #                     va="center",
-    #                     color="white",
-    #                     fontsize=10
-    #                 )
-    #                 y_start += height
-
-    #     ax.set_xlim(-self.width / 2, self.width / 2)
-    #     ax.set_ylim(0, self.height)
-    #     ax.set_title("Closet Space Arrangement")
-    #     ax.set_xlabel("Width (inches, centred)")
-    #     ax.set_ylabel("Height (inches)")
-    #     plt.grid(visible=False)
-    #     plt.show()
-
 
 # Example usage
 if __name__ == "__main__":
