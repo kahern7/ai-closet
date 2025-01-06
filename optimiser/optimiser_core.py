@@ -81,7 +81,7 @@ class ClosetOptimiser:
         if unused_space < 0:
             fitness -= 100  # Heavy penalty for exceeding space
         else:
-            fitness -= min(unused_space, 80)
+            fitness -= min(unused_space / 10, 80)
 
         # Ensure space does not exceed constraints for each column
         num_components = len(self.preferences.keys())
@@ -104,7 +104,7 @@ class ClosetOptimiser:
 
         return fitness,
 
-    def optimise(self, population_size=200, generations=100, cxpb=0.5, mutpb=0.2):
+    def optimise(self, population_size=300, generations=100, cxpb=0.5, mutpb=0.2):
         population = self.toolbox.population(n=population_size)
         
         # # Debug: Check the initial population

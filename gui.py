@@ -14,8 +14,8 @@ class ClosetOptimiserGUI:
         self.width.pack()
 
         tk.Label(root, text="Height (mm)").pack()
-        self.height = tk.Scale(root, from_=788, to=2196, bigincrement=32, orient="horizontal")
-        self.height.set(2196)
+        self.height = tk.Scale(root, from_=788, to=2176, bigincrement=32, orient="horizontal") # max height changed to 2176 to allow for 100% space filling
+        self.height.set(2176)
         self.height.pack()
 
         # Component preferences
