@@ -18,15 +18,26 @@ def visualise_closet(arrangement, width, height, columns):
                     color=colors.get(component, "grey"),
                     edgecolor="black"
                 )
-                ax.text(
-                    x_position,
-                    y_start + comp_height / 2,
-                    f"{component}\n{comp_height} mm",
-                    ha="center",
-                    va="center",
-                    color="white",
-                    fontsize=10
-                )
+                if comp_height > 128:
+                    ax.text(
+                        x_position,
+                        y_start + comp_height / 2,
+                        f"{component}\n{comp_height} mm",
+                        ha="center",
+                        va="center",
+                        color="white",
+                        fontsize=10
+                    )
+                else:
+                    ax.text(
+                        x_position,
+                        y_start + comp_height / 2,
+                        f"{component} {comp_height} mm",
+                        ha="center",
+                        va="center",
+                        color="white",
+                        fontsize=10
+                    )
                 y_start += comp_height
 
     ax.set_xlim(-width / 2, width / 2)
