@@ -3,7 +3,7 @@ from optimiser.visualiser import visualise_closet
 import tkinter as tk
 from tkinter import ttk
 from tkinter import PhotoImage
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 
 class ClosetOptimiserGUI:
@@ -153,4 +153,11 @@ class ClosetOptimiserGUI:
             tab_control.add(frame, text=title)
             canvas = FigureCanvasTkAgg(fig, master=frame)
             canvas.draw()
+
+            # create an pack NavigationToolbar2Tk
+            toolbar = NavigationToolbar2Tk(canvas, frame)
+            toolbar.update()
+            toolbar.pack()
+            
+            # Pack tge canvas for the plot
             canvas.get_tk_widget().pack(fill="both", expand=True)
