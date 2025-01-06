@@ -9,7 +9,7 @@ def visualise_closet(arrangement, width, height, columns):
     for col_index, x_position in enumerate(column_positions):
         y_start = 0
         for (column, component), comp_height in arrangement.items():
-            if column == col_index:
+            if column == col_index and comp_height > 0:
                 ax.bar(
                     x_position,
                     comp_height,
