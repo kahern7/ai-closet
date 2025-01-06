@@ -4,7 +4,7 @@ import random
 
 
 class ClosetOptimiser:
-    def __init__(self, width, height, preferences):
+    def __init__(self, width, height, preferences, alg_pref):
         self.width = width
         self.height = height
         self.preferences = {k: v for k, v in preferences.items() if v > 0}  # Filter out zero-preference components
@@ -16,6 +16,7 @@ class ClosetOptimiser:
             "short_hanging": (29*32), # 928 mm
             "long_hanging": (47*32) # 1504 mm
         }
+        self.alg_pref = alg_pref
         self.toolbox = self.setup_toolbox()
     
     def setup_toolbox(self):
@@ -81,7 +82,7 @@ class ClosetOptimiser:
         if unused_space < 0:
             fitness -= 100  # Heavy penalty for exceeding space
         else:
-            fitness -= min(unused_space, 80)
+            fitness -= unused_space / 50
 
         # Ensure space does not exceed constraints for each column
         num_components = len(self.preferences.keys())
@@ -104,7 +105,11 @@ class ClosetOptimiser:
 
         return fitness,
 
-    def optimise(self, population_size=200, generations=100, cxpb=0.5, mutpb=0.2):
+    def optimise(self, population_size=None, generations=None, cxpb=0.5, mutpb=0.2):
+        if population_size is None:
+            population_size = self.alg_pref["Population"]
+        if generations is None:
+            generations = self.alg_pref["Generations"]
         population = self.toolbox.population(n=population_size)
         
         # # Debug: Check the initial population
