@@ -7,9 +7,9 @@ class ClosetOptimiser:
     def __init__(self, width, height, preferences):
         self.width = width
         self.height = height
-        self.preferences = preferences
+        self.preferences = {k: v for k, v in preferences.items() if v > 0}  # Filter out zero-preference components
         self.columns = 4
-        self.components = ["shelves", "drawers", "short_hanging", "long_hanging"]
+        self.components = list(self.preferences.keys())  # Use filtered components
         self.min_heights = {  # Minimum heights for components
             "shelves": 32,
             "drawers": (7*32), # 224 mm
@@ -27,7 +27,6 @@ class ClosetOptimiser:
 
         def attr_height(component):
             min_height = self.min_heights[component]
-            temp = self.height // min_height
             return random.randint(0, self.height // min_height) * min_height
 
         toolbox.register(
@@ -65,10 +64,10 @@ class ClosetOptimiser:
         # calculate fitness
         total_space_used = sum(individual)
         component_allocation = {
-            "drawers": sum(individual[:self.columns]),
-            "shelves": sum(individual[self.columns:2*self.columns]),
-            "short_hanging": sum(individual[2*self.columns:3*self.columns]),
-            "long_hanging": sum(individual[3*self.columns:])
+            component: sum(
+                individual[self.columns * i : self.columns * (i + 1)]
+            )
+            for i, component in enumerate(self.components)
         }
 
         # Calculate fitness based on adherence to user preferences
@@ -105,7 +104,7 @@ class ClosetOptimiser:
 
         return fitness,
 
-    def optimise(self, population_size=1000, generations=100, cxpb=0.5, mutpb=0.2):
+    def optimise(self, population_size=200, generations=100, cxpb=0.5, mutpb=0.2):
         population = self.toolbox.population(n=population_size)
         
         # # Debug: Check the initial population
