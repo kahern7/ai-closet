@@ -1,7 +1,8 @@
 from gui import ClosetOptimiserGUI
-import tkinter as tk
+# from tests.test_gui import ClosetOptimiserGUI
+import customtkinter as ctk
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root = ctk.CTk()
     app = ClosetOptimiserGUI(root)
     root.mainloop()
