@@ -20,7 +20,7 @@ class ClosetOptimiser:
         self.toolbox = self.setup_toolbox()
     
     def setup_toolbox(self):
-        # Define the DEAP toolbox here
+        """Define the DEAP toolbox"""
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMax)
 
@@ -37,14 +37,17 @@ class ClosetOptimiser:
             )
         )
 
-        # toolbox.register("attr_height", random.randint, 10, self.height)
-        # toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_height, self.columns * len(self.components))
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
         toolbox.register("evaluate", self.evaluate)
         toolbox.register("mate", tools.cxTwoPoint)
-        # toolbox.register("mutate", tools.mutUniformInt, low=10, up=self.height, indpb=0.1)
         toolbox.register("mutate", self.constrained_mutate) # use new custom mutation func for minimum comp heights
         toolbox.register("select", tools.selTournament, tournsize=3)
+
+        # Legacy traits
+        # toolbox.register("attr_height", random.randint, 10, self.height)
+        # toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_height, self.columns * len(self.components))
+        # toolbox.register("mutate", tools.mutUniformInt, low=10, up=self.height, indpb=0.1)
+
         return toolbox
     
     def constrained_mutate(self, individual):
@@ -62,17 +65,17 @@ class ClosetOptimiser:
         return (individual,)
 
     def evaluate(self, individual):
-        # calculate fitness
+        """Evaluate fitness based on adherence to user preferences"""
+        fitness = 0
+        
+        # Calculate total space taken up by component
         total_space_used = sum(individual)
         component_allocation = {
-            component: sum(
-                individual[self.columns * i : self.columns * (i + 1)]
-            )
+            component: sum(individual[self.columns * i : self.columns * (i + 1)])
             for i, component in enumerate(self.components)
         }
 
-        # Calculate fitness based on adherence to user preferences
-        fitness = 0
+        # Penalise discrepancy in component percentage
         for component, target_percentage in self.preferences.items():
             allocated_percentage = (component_allocation[component] / (self.columns * self.height)) * 100
             fitness -= abs(allocated_percentage - target_percentage)  # Penalise deviation
@@ -96,8 +99,6 @@ class ClosetOptimiser:
             for comp_index, component in enumerate(self.components):
                 height = individual[col * len(self.components) + comp_index]
                 min_height = self.min_heights[component]
-
-                # Penalise violations of the minimum height constraint
                 if height == 0:
                     pass
                 if height % min_height != 0:

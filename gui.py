@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 class ClosetOptimiserGUI:
     def __init__(self, root):
+        """Initalise tkinter GUI """
         self.root = root
         self.root.title("ClosetCAD AI Testbench")
 
@@ -100,10 +101,11 @@ class ClosetOptimiserGUI:
         self.short_hanging = create_slider_with_input(self.options_frame, "Short Hanging (%)", 0, 100, 1, 0)
         self.long_hanging = create_slider_with_input(self.options_frame, "Long Hanging (%)", 0, 100, 1, 0)
 
-        # Advanced settings dropdown
+        # Advanced settings button
         toggle_button = tk.Button(self.options_frame, text="Show Advanced Settings", command=toggle_advanced)
         toggle_button.pack(pady=10)
 
+        # Advanced settings menu and sliders
         advanced_frame = tk.LabelFrame(self.options_frame, text="Advanced Settings")
         self.pop_size = create_slider_with_input(advanced_frame, "Algorithm Population Size", 100, 5000, 100, 500)
         self.num_gens = create_slider_with_input(advanced_frame, "Algorithm Generations", 100, 1000, 100, 100)
@@ -127,6 +129,7 @@ class ClosetOptimiserGUI:
             "Generations": int(self.num_gens.get())
         }
 
+        # Ensure user inputs are within required percentage range
         if preferences["shelves"] < 0:
             raise ValueError("Percentages must be less than or equal to 100")
 
@@ -161,3 +164,9 @@ class ClosetOptimiserGUI:
             
             # Pack tge canvas for the plot
             canvas.get_tk_widget().pack(fill="both", expand=True)
+
+"""Example Usage"""
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ClosetOptimiserGUI(root)
+    root.mainloop()
