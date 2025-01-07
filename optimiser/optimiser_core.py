@@ -20,7 +20,7 @@ class ClosetOptimiser:
         self.toolbox = self.setup_toolbox()
     
     def setup_toolbox(self):
-        # Define the DEAP toolbox here
+        """Define the DEAP toolbox"""
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMax)
 
@@ -28,7 +28,7 @@ class ClosetOptimiser:
 
         def attr_height(component):
             min_height = self.min_heights[component]
-            return random.randint(0, self.height // min_height) * min_height
+            return random.randint(0, int(self.height // min_height)) * min_height
 
         toolbox.register(
             "individual",
@@ -37,14 +37,17 @@ class ClosetOptimiser:
             )
         )
 
-        # toolbox.register("attr_height", random.randint, 10, self.height)
-        # toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_height, self.columns * len(self.components))
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
         toolbox.register("evaluate", self.evaluate)
         toolbox.register("mate", tools.cxTwoPoint)
-        # toolbox.register("mutate", tools.mutUniformInt, low=10, up=self.height, indpb=0.1)
         toolbox.register("mutate", self.constrained_mutate) # use new custom mutation func for minimum comp heights
         toolbox.register("select", tools.selTournament, tournsize=3)
+
+        # Legacy traits
+        # toolbox.register("attr_height", random.randint, 10, self.height)
+        # toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_height, self.columns * len(self.components))
+        # toolbox.register("mutate", tools.mutUniformInt, low=10, up=self.height, indpb=0.1)
+
         return toolbox
     
     def constrained_mutate(self, individual):
@@ -54,7 +57,7 @@ class ClosetOptimiser:
             min_height = self.min_heights[component]
 
             # Generate a new valid height as an integer multiple
-            individual[i] = random.randint(0, self.height // min_height) * min_height
+            individual[i] = random.randint(0, int(self.height // min_height)) * min_height
         
         # # Debug: Check the mutated individual
         # print("Mutated Individual:", individual)
@@ -62,17 +65,17 @@ class ClosetOptimiser:
         return (individual,)
 
     def evaluate(self, individual):
-        # calculate fitness
+        """Evaluate fitness based on adherence to user preferences"""
+        fitness = 0
+        
+        # Calculate total space taken up by component
         total_space_used = sum(individual)
         component_allocation = {
-            component: sum(
-                individual[self.columns * i : self.columns * (i + 1)]
-            )
+            component: sum(individual[self.columns * i : self.columns * (i + 1)])
             for i, component in enumerate(self.components)
         }
 
-        # Calculate fitness based on adherence to user preferences
-        fitness = 0
+        # Penalise discrepancy in component percentage
         for component, target_percentage in self.preferences.items():
             allocated_percentage = (component_allocation[component] / (self.columns * self.height)) * 100
             fitness -= abs(allocated_percentage - target_percentage)  # Penalise deviation
@@ -96,8 +99,6 @@ class ClosetOptimiser:
             for comp_index, component in enumerate(self.components):
                 height = individual[col * len(self.components) + comp_index]
                 min_height = self.min_heights[component]
-
-                # Penalise violations of the minimum height constraint
                 if height == 0:
                     pass
                 if height % min_height != 0:
@@ -107,15 +108,10 @@ class ClosetOptimiser:
 
     def optimise(self, population_size=None, generations=None, cxpb=0.5, mutpb=0.2):
         if population_size is None:
-            population_size = self.alg_pref["Population"]
+            population_size = int(self.alg_pref["Population"])
         if generations is None:
-            generations = self.alg_pref["Generations"]
+            generations = int(self.alg_pref["Generations"])
         population = self.toolbox.population(n=population_size)
-        
-        # # Debug: Check the initial population
-        # print("Initial Population:")
-        # for ind in population:
-        #     print(ind)
 
         # Statistics for tracking performance
         stats = tools.Statistics(lambda ind: ind.fitness.values[0])
@@ -129,12 +125,6 @@ class ClosetOptimiser:
         for gen in range(generations):
             offspring = algorithms.varAnd(population, self.toolbox, cxpb, mutpb)
             fits = self.toolbox.map(self.toolbox.evaluate, offspring)
-
-            # # Debug: Check offspring fitness before assigning
-            # print(f"Generation {gen} - Offspring Fitness:")
-            # for ind, fit in zip(offspring, fits):
-            #     print(ind, "Fitness:", fit)
-
             for ind, fit in zip(offspring, fits):
                 ind.fitness.values = fit
             population[:] = self.toolbox.select(offspring, k=len(population))
@@ -145,26 +135,25 @@ class ClosetOptimiser:
         
         # Get the best solution
         best_individual = tools.selBest(population, k=1)[0]
-        # print("Best Individual:", best_individual)
-        # print("Fitness:", best_individual.fitness.values)
+        fig = self.plot_progress(logbook)
 
-        self.plot_progress(logbook)  # Plot progress after the evolution
-        return best_individual
+        return best_individual, fig
     
     def plot_progress(self, logbook):
         generations = logbook.select("gen")
         max_fitness = logbook.select("max")
         avg_fitness = logbook.select("avg")
 
-        plt.figure(1, figsize=(10, 6))
-        plt.clf()
-        plt.plot(generations, max_fitness, label="Max Fitness", color="blue")
-        plt.plot(generations, avg_fitness, label="Average Fitness", color="green")
-        plt.title("Algorithm Progress")
-        plt.xlabel("Generations")
-        plt.ylabel("Fitness")
-        plt.legend(loc="best")
-        plt.grid(True)
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(generations, max_fitness, label="Max Fitness", color="blue")
+        ax.plot(generations, avg_fitness, label="Average Fitness", color="green")
+        ax.set_title("Algorithm Progress")
+        ax.set_xlabel("Generations")
+        ax.set_ylabel("Fitness")
+        ax.legend(loc="best")
+        ax.grid(True)
+
+        return fig  # Return the figure
 
     def map_individual_to_arrangement(self, individual):
         """Convert the individual into a dictionary mapping columns to components and their heights."""
