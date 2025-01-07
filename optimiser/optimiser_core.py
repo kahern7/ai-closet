@@ -21,6 +21,13 @@ class ClosetOptimiser:
     
     def setup_toolbox(self):
         """Define the DEAP toolbox"""
+        # Avoid overwriting exisiting class
+        try:
+            del creator.Individual
+            del creator.FitnessMax
+        except Exception as e:
+            pass
+
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMax)
 

@@ -1,96 +1,148 @@
-import tkinter as tk
+import customtkinter as ctk
+from optimiser.optimiser_core import ClosetOptimiser
+from optimiser.visualiser import visualise_closet
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 class ClosetOptimiserGUI:
     def __init__(self, root):
+        """Initialize customtkinter GUI."""
         self.root = root
-        self.root.title("Closet Optimiser")
+        self.root.title("ClosetCAD AI Testbench")
+        ctk.set_appearance_mode("light")  # Light or Dark mode based on system settings
+        ctk.set_default_color_theme("blue")  # Default theme
+
+        # Set custom icon
+        self.root.iconbitmap("images/favicon.ico")
+
+        # Initial and minimum window sizing
+        self.root.geometry("1200x600")
+        self.root.minsize(400, 350)
 
         # Paned window layout
-        self.paned_window = tk.PanedWindow(root, orient="horizontal")
+        self.paned_window = ctk.CTkFrame(root)
         self.paned_window.pack(fill="both", expand=True)
 
         # Left panel (Options Menu)
-        self.options_frame = tk.Frame(self.paned_window, bg="lightgrey")
-        self.paned_window.add(self.options_frame)
+        self.options_frame = ctk.CTkFrame(self.paned_window)
+        self.options_frame.pack_propagate(True)  # Prevent resizing based on content
+        self.options_frame.pack(side="left", fill="y", padx=10, pady=10)
 
         # Right panel (Figures)
-        self.figures_frame = tk.Frame(self.paned_window, bg="white")
-        self.paned_window.add(self.figures_frame)
+        self.figures_frame = ctk.CTkFrame(self.paned_window)
+        self.figures_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
-        # Add a test label to ensure visibility
-        tk.Label(self.options_frame, text="Options Panel").pack()
-        tk.Label(self.figures_frame, text="Figures Panel").pack()
+        ctk.CTkLabel(self.options_frame, text="Options Panel", font=("Arial", 16)).pack(pady=5)
+        ctk.CTkLabel(self.figures_frame, text="Figures Panel", font=("Arial", 16)).pack(pady=5)
 
+        # Add UI elements to the options frame
         self.add_options_ui()
 
     def add_options_ui(self):
         """Create the UI components for user inputs."""
         def create_slider_with_input(parent, label, from_, to, increment, default):
             """Creates a slider with an entry box for manual input."""
-            frame = tk.Frame(parent)
+            frame = ctk.CTkFrame(parent)
             frame.pack(pady=5, fill="x")
 
-            tk.Label(frame, text=label).pack(side="left", padx=5)
-            var = tk.DoubleVar(value=default)
-            slider = tk.Scale(
-                frame, from_=from_, to=to, resolution=increment,
-                orient="horizontal", variable=var
+            ctk.CTkLabel(frame, text=label).pack(side="left", padx=5)
+            var = ctk.IntVar(value=default)
+            slider = ctk.CTkSlider(
+                frame, from_=from_, to=to, number_of_steps=int((to - from_) / increment), variable=var
             )
             slider.pack(side="left", expand=True, fill="x", padx=5)
 
-            entry = tk.Entry(frame, textvariable=var, width=6)
+            entry = ctk.CTkEntry(frame, textvariable=var, width=50)
             entry.pack(side="left", padx=5)
-
-            # Update slider when entry is changed
-            entry.bind("<FocusOut>", lambda e: update_slider(entry.get(), slider, var))
-            entry.bind("<Return>", lambda e: update_slider(entry.get(), slider, var))
-
-            # Update entry when slider is changed
-            slider.config(command=lambda v: update_entry(v, var))
 
             return var
 
-        def update_slider(value, slider, var):
-            """Update slider position when entry value changes."""
-            try:
-                val = int(value)
-                if slider.cget('from') <= val <= slider.cget('to'):
-                    slider.set(val)
-            except ValueError:
-                pass
-
-        def update_entry(value, entry_var):
-            """Update entry value when slider changes."""
-            entry_var.set(f"{int(value):d}")
-
-        def toggle_advanced():
-            """Toggle the visibility of the advanced section."""
-            if advanced_frame.winfo_ismapped():
-                advanced_frame.pack_forget()
-                toggle_button.config(text="Show Advanced Settings")
-            else:
-                advanced_frame.pack(fill="x", pady=10)
-                toggle_button.config(text="Hide Advanced Settings")
-
         # Space properties
         self.width = create_slider_with_input(self.options_frame, "Width (mm)", 500, 5000, 10, 2540)
-        self.height = create_slider_with_input(self.options_frame, "Height (mm)", 788, 2176, 32, 2176)
+        self.height = create_slider_with_input(self.options_frame, "Height (mm)", 800, 2176, 32, 2176)
 
         # Component preferences
         self.drawers = create_slider_with_input(self.options_frame, "Drawers (%)", 0, 50, 1, 0)
         self.short_hanging = create_slider_with_input(self.options_frame, "Short Hanging (%)", 0, 100, 1, 0)
         self.long_hanging = create_slider_with_input(self.options_frame, "Long Hanging (%)", 0, 100, 1, 0)
 
-        # Advanced settings dropdown
-        toggle_button = tk.Button(self.options_frame, text="Show Advanced Settings", command=toggle_advanced)
+        # Advanced settings button
+        toggle_button = ctk.CTkButton(self.options_frame, text="Show Advanced Settings", command=self.toggle_advanced)
         toggle_button.pack(pady=10)
 
-        advanced_frame = tk.LabelFrame(self.options_frame, text="Advanced Settings")
-        self.pop_size = create_slider_with_input(advanced_frame, "Algorithm Population Size", 100, 5000, 100, 500)
-        self.num_gens = create_slider_with_input(advanced_frame, "Algorithm Generations", 100, 1000, 100, 100)
+        # Advanced settings menu and sliders
+        self.advanced_frame = ctk.CTkFrame(self.options_frame)
+        self.pop_size = create_slider_with_input(self.advanced_frame, "Algorithm Population Size", 100, 5000, 100, 500)
+        self.num_gens = create_slider_with_input(self.advanced_frame, "Algorithm Generations", 100, 1000, 100, 100)
 
+        # Optimise button
+        ctk.CTkButton(self.options_frame, text="Optimise Closet", command=self.run_optimisation).pack(pady=10)
 
+    def toggle_advanced(self):
+        """Toggle the visibility of the advanced section."""
+        if self.advanced_frame.winfo_ismapped():
+            self.advanced_frame.pack_forget()
+        else:
+            self.advanced_frame.pack(fill="x", pady=10)
+
+    def run_optimisation(self):
+        """Run the optimisation and update the figures."""
+        # Collect user inputs
+        width = self.width.get()
+        height = self.height.get()
+        preferences = {
+            "shelves": int(100 - self.drawers.get() - self.short_hanging.get() - self.long_hanging.get()),
+            "drawers": int(self.drawers.get()),
+            "short_hanging": int(self.short_hanging.get()),
+            "long_hanging": int(self.long_hanging.get()),
+        }
+        alg_pref = {
+            "Population": int(self.pop_size.get()),
+            "Generations": int(self.num_gens.get())
+        }
+
+        # Ensure user inputs are within required percentage range
+        if preferences["shelves"] < 0:
+            raise ValueError("Percentages must be less than or equal to 100")
+
+        # Run optimisation
+        optimiser = ClosetOptimiser(int(width), int(height), preferences, alg_pref)
+        best_individual, progress_fig = optimiser.optimise()
+
+        # Prepare output for visualisation
+        arrangement = optimiser.map_individual_to_arrangement(best_individual)
+        closet_fig = visualise_closet(arrangement, width, height, optimiser.columns)
+
+        self.update_figure([closet_fig, progress_fig], ["Closet Visualisation", "Optimisation Progress"])
+
+    def update_figure(self, figures, titles):
+        """Display the figures in tabs within the right panel."""
+        # Clear existing content
+        for widget in self.figures_frame.winfo_children():
+            widget.destroy()
+
+        # Create the tab control
+        tab_control = ctk.CTkTabview(self.figures_frame)
+        tab_control.pack(fill="both", expand=True)
+
+        for fig, title in zip(figures, titles):
+            # Add a new tab with the title
+            tab_control.add(title)
+            frame = tab_control.tab(title)
+
+            # Embed the matplotlib figure
+            canvas = FigureCanvasTkAgg(fig, master=frame)
+            canvas.draw()
+
+            # Add NavigationToolbar2Tk
+            toolbar = NavigationToolbar2Tk(canvas, frame)
+            toolbar.update()
+            toolbar.pack()
+
+            # Pack the canvas
+            canvas.get_tk_widget().pack(fill="both", expand=True)
+
+# Example usage
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = ClosetOptimiserGUI(root)
-    root.mainloop()
+    app = ctk.CTk()
+    gui = ClosetOptimiserGUI(app)
+    app.mainloop()
