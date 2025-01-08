@@ -1,7 +1,8 @@
 from deap import base, creator, tools, algorithms
 import matplotlib.pyplot as plt
 import random
-
+from optimiser.constraints import ClosetConstraints
+import inspect
 
 class ClosetOptimiser:
     def __init__(self, width: int, height: int, preferences: dict[str, int], alg_pref: dict[str, int]) -> None:
@@ -73,46 +74,21 @@ class ClosetOptimiser:
 
     def evaluate(self, individual: list[int]) -> int:
         """Evaluate fitness based on adherence to user preferences"""
-        fitness: int = 0
-        
-        # Calculate total space taken up by component
-        total_space_used: int = sum(individual)
-        component_allocation: dict[str: int] = {
-            component: sum(individual[self.columns * i : self.columns * (i + 1)])
-            for i, component in enumerate(self.components)
+        # create config dict and pass to ClosetConstraints class
+        config: dict = {
+            "width": self.width,
+            "height": self.height,
+            "preferences": self.preferences,
+            "columns": self.columns,
+            "components": self.components,
+            "min_heights": self.min_heights,
         }
-
-        # Penalise discrepancy in component percentage
-        for component, target_percentage in self.preferences.items():
-            weight:int = 1
-            if component == "shelves" and target_percentage == 0: # penalise model if it is filling drawers in over other components
-                weight = 5
-            allocated_percentage: int = (component_allocation[component] / (self.columns * self.height)) * 100
-            fitness -= weight * abs(allocated_percentage - target_percentage)  # Penalise deviation
-
-        # Ensure space does not exceed constraints and Penalise under utilisation of space
-        unused_space: int = (self.height * self.columns) - total_space_used
-        if unused_space < 0:
-            fitness -= 100  # Heavy penalty for exceeding space
-        else:
-            fitness -= unused_space / 50
-
-        # Ensure space does not exceed constraints for each column
-        num_components: int = len(self.preferences.keys())
-        for col in range(self.columns):
-            column_height: int = sum(individual[(col * num_components):((col + 1) * num_components)]) # [col::self.columns] seems to not work
-            if column_height > self.height:
-                fitness -= 100 + (column_height - self.height)  # Penalise exceeding column space heavily
-
-        # Penalise any violation of minimum height constraint
-        for col in range(self.columns):
-            for comp_index, component in enumerate(self.components):
-                height: int = individual[col * len(self.components) + comp_index]
-                min_height: int = self.min_heights[component]
-                if height == 0:
-                    pass
-                if height % min_height != 0:
-                    fitness -= 100
+        cc = ClosetConstraints(config)
+        fitness = 0
+        # Dynamically find all constraint methods starting with "con_"
+        for name, method in inspect.getmembers(cc, predicate=inspect.ismethod):
+            if name.startswith(("con_")):
+                fitness -= method(individual)
 
         return fitness,
 

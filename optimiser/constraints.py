@@ -1,42 +1,60 @@
-from optimiser_core import ClosetOptimiser as co
-
 class ClosetConstraints:
-    def __init__(self) -> None:
-        pass
+    """All constraint funcs start with con_"""
+    def __init__(self, config: dict) -> None:
+        self.width = config["width"]
+        self.height = config["height"]
+        self.preferences = config["preferences"]
+        self.columns = config["columns"]
+        self.components = config["components"]
+        self.min_heights = config["min_heights"]
 
-    def comp_percent_diff(self, individual: list[int], fitness: int) -> int:
+    def con_comp_percent_diff(self, individual: list[int]) -> int:
         """Penalise discrepancy in component percentage"""
+        penalty = 0
         # Find total height (mm) in closet taken up by each component (across all 4 columns)
         component_allocation: dict[str: int] = {
-            component: sum(individual[co.columns * i : co.columns * (i + 1)])
-            for i, component in enumerate(co.components)
+            component: sum(individual[self.columns * i : self.columns * (i + 1)])
+            for i, component in enumerate(self.components)
         }
-        for component, target_percentage in co.preferences.items():
-            weight:int = 1
-            if component == "shelves" and target_percentage == 0: # penalise model if it is filling drawers in over other components
-                weight = 5
-            allocated_percentage: int = (component_allocation[component] / (co.columns * co.height)) * 100
-            fitness -= weight * abs(allocated_percentage - target_percentage)  # Penalise deviation
-        return fitness
+        for component, target_percentage in self.preferences.items():
+            weight = 5 if component == "shelves" and target_percentage == 0 else 1 # penalise deviation from 0 more
+            allocated_percentage: int = (component_allocation[component] / (self.columns * self.height)) * 100
+            penalty += weight * abs(allocated_percentage - target_percentage)  # Penalise deviation
+        return penalty
     
-    def exceed_total_space(self, individual: list[int], fitness: int) -> int:
+    def con_exceed_total_space(self, individual: list[int]) -> int:
         """Ensure space does not exceed constraints and Penalise under utilisation of space"""
+        penalty = 0
         total_space_used: int = sum(individual)
-        unused_space: int = (co.height * co.columns) - total_space_used
+        unused_space: int = (self.height * self.columns) - total_space_used
         if unused_space < 0:
-            fitness -= 100  # Heavy penalty for exceeding space
+            penalty += 100  # Heavy penalty for exceeding total space
         else:
-            fitness -= unused_space / 50
-        return fitness
+            penalty += unused_space / 50
+        return penalty
     
-    def exceed_min_comp_height(self, individual: list[int], fitness: int) -> int:
+    def con_exceed_col_height(self, individual: list[int]) -> int:
+        """Ensure space does not exceed constraints for each column"""
+        penalty = 0
+        num_components: int = len(self.preferences.keys())
+        for col in range(self.columns):
+            column_height: int = sum(individual[(col * num_components):((col + 1) * num_components)])
+            if column_height > self.height:
+                penalty += 100 + (column_height - self.height)  # Penalise exceeding column space heavily
+        return penalty
+    
+    def con_exceed_min_comp_height(self, individual: list[int]) -> int:
         """Penalise any violation of minimum height constraint"""
-        for col in range(co.columns):
-            for comp_index, component in enumerate(co.components):
-                height: int = individual[col * len(co.components) + comp_index]
-                min_height: int = co.min_heights[component]
+        penalty = 0
+        for col in range(self.columns):
+            for comp_index, component in enumerate(self.components):
+                height: int = individual[col * len(self.components) + comp_index]
+                min_height: int = self.min_heights[component]
                 if height == 0:
                     pass
                 if height % min_height != 0:
-                    fitness -= 100
-        return fitness
+                    penalty += 100
+        return penalty
+    
+if __name__ == "__main__":
+    pass
