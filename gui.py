@@ -89,11 +89,11 @@ class ClosetOptimiserGUI:
         # Collect user inputs
         width: int = self.width.get()
         height: int = self.height.get()
-        preferences: dict[str, int] = {
-            "shelves": int(100 - self.drawers.get() - self.short_hanging.get() - self.long_hanging.get()),
+        preferences: dict[str, int] = { # shelves must be last
             "drawers": int(self.drawers.get()),
             "short_hanging": int(self.short_hanging.get()),
             "long_hanging": int(self.long_hanging.get()),
+            "shelves": int(100 - self.drawers.get() - self.short_hanging.get() - self.long_hanging.get()),
         }
         alg_pref: dict[str, int] = {
             "Population": int(self.pop_size.get()),

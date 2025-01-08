@@ -12,10 +12,10 @@ class ClosetOptimiser:
         self.columns: int = 4
         self.components: list[str] = list(self.preferences.keys())  # Use filtered components
         self.min_heights: dict[str, int] = {  # Minimum heights for components
-            "shelves": 32,
             "drawers": (7*32), # 224 mm
             "short_hanging": (29*32), # 928 mm
-            "long_hanging": (47*32) # 1504 mm
+            "long_hanging": (47*32), # 1504 mm
+            "shelves": 32
         }
         self.alg_pref: dict[str, int] = alg_pref
         self.toolbox: base.Toolbox = self.setup_toolbox()
@@ -33,8 +33,9 @@ class ClosetOptimiser:
         creator.create("Individual", list, fitness=creator.FitnessMax)
 
         toolbox: base.Toolbox = base.Toolbox()
-
-        def attr_height(component: str) -> int:
+        
+        def attr_height(component: str):
+            """Assign new component height"""
             min_height: int = self.min_heights[component]
             return random.randint(0, int(self.height // min_height)) * min_height
 
@@ -44,7 +45,7 @@ class ClosetOptimiser:
                 [attr_height(component) for component in self.components for _ in range(self.columns)]
             )
         )
-
+        
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
         toolbox.register("evaluate", self.evaluate)
         toolbox.register("mate", tools.cxTwoPoint)
@@ -84,8 +85,9 @@ class ClosetOptimiser:
             "min_heights": self.min_heights,
         }
         cc = ClosetConstraints(config)
-        fitness = 0
-        # Dynamically find all constraint methods starting with "con_"
+        fitness = 0     
+        
+        # Evaluate constraints
         for name, method in inspect.getmembers(cc, predicate=inspect.ismethod):
             if name.startswith(("con_")):
                 fitness -= method(individual)
@@ -122,6 +124,18 @@ class ClosetOptimiser:
         # Get the best solution
         best_individual: list[int] = tools.selBest(population, k=1)[0]
         fig: plt.Figure = self.plot_progress(logbook)
+        
+        # # Add shelves to best individual fill remaining space
+        # remaining_space = [self.height] * self.columns
+        # for i, height in enumerate(best_individual):
+        #     component = self.components[i % len(self.components)]
+        #     col = i // len(self.components)
+        #     if component != "shelves":
+        #         remaining_space[col] -= height
+                
+        # for i, height in enumerate(best_individual):
+        #     if self.components[i % len(self.components)] == "shelves":
+        #         best_individual[i] = remaining_space[i // len(self.components)]
 
         return best_individual, fig
     

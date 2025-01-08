@@ -16,10 +16,14 @@ class ClosetConstraints:
             component: sum(individual[self.columns * i : self.columns * (i + 1)])
             for i, component in enumerate(self.components)
         }
+        
         for component, target_percentage in self.preferences.items():
-            weight = 5 if component == "shelves" and target_percentage == 0 else 1 # penalise deviation from 0 more
+            # if component == "shelves": 
+            #     pass # skip penalty for shelves as it adapts to reminaing space
+            # else:
             allocated_percentage: int = (component_allocation[component] / (self.columns * self.height)) * 100
-            penalty += weight * abs(allocated_percentage - target_percentage)  # Penalise deviation
+            penalty += abs(allocated_percentage - target_percentage)  # Penalise deviation
+        
         return penalty
     
     def con_exceed_total_space(self, individual: list[int]) -> int:
@@ -52,7 +56,7 @@ class ClosetConstraints:
                 min_height: int = self.min_heights[component]
                 if height == 0:
                     pass
-                if height % min_height != 0:
+                elif height % min_height != 0:
                     penalty += 100
         return penalty
     
