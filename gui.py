@@ -4,11 +4,11 @@ from optimiser.visualiser import visualise_closet
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 class ClosetOptimiserGUI:
-    def __init__(self, root):
-        """Initialize customtkinter GUI."""
-        self.root = root
+    def __init__(self, root: ctk.CTk) -> None:
+        """Initialise customtkinter GUI."""
+        self.root: ctk.CTk = root
         self.root.title("ClosetCAD AI Testbench")
-        ctk.set_appearance_mode("light")  # Light or Dark mode based on system settings
+        ctk.set_appearance_mode("light")  # 'light' or 'dark' mode
         ctk.set_default_color_theme("blue")  # Default theme
 
         # Set custom icon
@@ -19,16 +19,16 @@ class ClosetOptimiserGUI:
         self.root.minsize(400, 350)
 
         # Paned window layout
-        self.paned_window = ctk.CTkFrame(root)
+        self.paned_window: ctk.CTkFrame = ctk.CTkFrame(root)
         self.paned_window.pack(fill="both", expand=True)
 
         # Left panel (Options Menu)
-        self.options_frame = ctk.CTkFrame(self.paned_window)
+        self.options_frame: ctk.CTkFrame = ctk.CTkFrame(self.paned_window)
         self.options_frame.pack_propagate(True)  # Prevent resizing based on content
         self.options_frame.pack(side="left", fill="y", padx=10, pady=10)
 
         # Right panel (Figures)
-        self.figures_frame = ctk.CTkFrame(self.paned_window)
+        self.figures_frame: ctk.CTkFrame = ctk.CTkFrame(self.paned_window)
         self.figures_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
         ctk.CTkLabel(self.options_frame, text="Options Panel", font=("Arial", 16)).pack(pady=5)
@@ -37,42 +37,42 @@ class ClosetOptimiserGUI:
         # Add UI elements to the options frame
         self.add_options_ui()
 
-    def add_options_ui(self):
+    def add_options_ui(self) -> None:
         """Create the UI components for user inputs."""
-        def create_slider_with_input(parent, label, from_, to, increment, default):
+        def create_slider_with_input(parent: ctk.CTkFrame, label: str, from_: int, to: int, increment: int, default: int) -> ctk.IntVar:
             """Creates a slider with an entry box for manual input."""
-            frame = ctk.CTkFrame(parent)
+            frame: ctk.CTkFrame = ctk.CTkFrame(parent)
             frame.pack(pady=5, fill="x")
 
             ctk.CTkLabel(frame, text=label).pack(side="left", padx=5)
-            var = ctk.IntVar(value=default)
-            slider = ctk.CTkSlider(
+            var: ctk.IntVar = ctk.IntVar(value=default)
+            slider: ctk.CTkSlider = ctk.CTkSlider(
                 frame, from_=from_, to=to, number_of_steps=int((to - from_) / increment), variable=var
             )
             slider.pack(side="left", expand=True, fill="x", padx=5)
 
-            entry = ctk.CTkEntry(frame, textvariable=var, width=50)
+            entry: ctk.CTkEntry = ctk.CTkEntry(frame, textvariable=var, width=50)
             entry.pack(side="left", padx=5)
 
             return var
 
         # Space properties
-        self.width = create_slider_with_input(self.options_frame, "Width (mm)", 500, 5000, 10, 2540)
-        self.height = create_slider_with_input(self.options_frame, "Height (mm)", 800, 2176, 32, 2176)
+        self.width: ctk.IntVar = create_slider_with_input(self.options_frame, "Width (mm)", 500, 5000, 10, 2540)
+        self.height: ctk.IntVar = create_slider_with_input(self.options_frame, "Height (mm)", 800, 2176, 32, 2176)
 
         # Component preferences
-        self.drawers = create_slider_with_input(self.options_frame, "Drawers (%)", 0, 50, 1, 0)
-        self.short_hanging = create_slider_with_input(self.options_frame, "Short Hanging (%)", 0, 100, 1, 0)
-        self.long_hanging = create_slider_with_input(self.options_frame, "Long Hanging (%)", 0, 100, 1, 0)
+        self.drawers: ctk.IntVar = create_slider_with_input(self.options_frame, "Drawers (%)", 0, 50, 1, 0)
+        self.short_hanging: ctk.IntVar = create_slider_with_input(self.options_frame, "Short Hanging (%)", 0, 100, 1, 0)
+        self.long_hanging: ctk.IntVar = create_slider_with_input(self.options_frame, "Long Hanging (%)", 0, 100, 1, 0)
 
         # Advanced settings button
-        toggle_button = ctk.CTkButton(self.options_frame, text="Show Advanced Settings", command=self.toggle_advanced)
+        toggle_button: ctk.CTkButton = ctk.CTkButton(self.options_frame, text="Show Advanced Settings", command=self.toggle_advanced)
         toggle_button.pack(pady=10)
 
         # Advanced settings menu and sliders
-        self.advanced_frame = ctk.CTkFrame(self.options_frame)
-        self.pop_size = create_slider_with_input(self.advanced_frame, "Algorithm Population Size", 100, 5000, 100, 500)
-        self.num_gens = create_slider_with_input(self.advanced_frame, "Algorithm Generations", 100, 1000, 100, 100)
+        self.advanced_frame: ctk.CTkFrame = ctk.CTkFrame(self.options_frame)
+        self.pop_size: ctk.IntVar = create_slider_with_input(self.advanced_frame, "Algorithm Population Size", 100, 5000, 100, 500)
+        self.num_gens: ctk.IntVar = create_slider_with_input(self.advanced_frame, "Algorithm Generations", 100, 1000, 100, 100)
 
         # Optimise button
         ctk.CTkButton(self.options_frame, text="Optimise Closet", command=self.run_optimisation).pack(pady=10)
@@ -87,15 +87,15 @@ class ClosetOptimiserGUI:
     def run_optimisation(self):
         """Run the optimisation and update the figures."""
         # Collect user inputs
-        width = self.width.get()
-        height = self.height.get()
-        preferences = {
+        width: int = self.width.get()
+        height: int = self.height.get()
+        preferences: dict[str, int] = {
             "shelves": int(100 - self.drawers.get() - self.short_hanging.get() - self.long_hanging.get()),
             "drawers": int(self.drawers.get()),
             "short_hanging": int(self.short_hanging.get()),
             "long_hanging": int(self.long_hanging.get()),
         }
-        alg_pref = {
+        alg_pref: dict[str, int] = {
             "Population": int(self.pop_size.get()),
             "Generations": int(self.num_gens.get())
         }
@@ -105,11 +105,11 @@ class ClosetOptimiserGUI:
             raise ValueError("Percentages must be less than or equal to 100")
 
         # Run optimisation
-        optimiser = ClosetOptimiser(int(width), int(height), preferences, alg_pref)
+        optimiser: ClosetOptimiser = ClosetOptimiser(width, height, preferences, alg_pref)
         best_individual, progress_fig = optimiser.optimise()
 
         # Prepare output for visualisation
-        arrangement = optimiser.map_individual_to_arrangement(best_individual)
+        arrangement: dict = optimiser.map_individual_to_arrangement(best_individual)
         closet_fig = visualise_closet(arrangement, width, height, optimiser.columns)
 
         self.update_figure([closet_fig, progress_fig], ["Closet Visualisation", "Optimisation Progress"])
@@ -121,20 +121,20 @@ class ClosetOptimiserGUI:
             widget.destroy()
 
         # Create the tab control
-        tab_control = ctk.CTkTabview(self.figures_frame)
+        tab_control: ctk.CTkTabview = ctk.CTkTabview(self.figures_frame)
         tab_control.pack(fill="both", expand=True)
 
         for fig, title in zip(figures, titles):
             # Add a new tab with the title
             tab_control.add(title)
-            frame = tab_control.tab(title)
+            frame: ctk.CTkFrame = tab_control.tab(title)
 
             # Embed the matplotlib figure
-            canvas = FigureCanvasTkAgg(fig, master=frame)
+            canvas: FigureCanvasTkAgg = FigureCanvasTkAgg(fig, master=frame)
             canvas.draw()
 
             # Add NavigationToolbar2Tk
-            toolbar = NavigationToolbar2Tk(canvas, frame)
+            toolbar: NavigationToolbar2Tk = NavigationToolbar2Tk(canvas, frame)
             toolbar.update()
             toolbar.pack()
 

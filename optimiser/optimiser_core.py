@@ -4,22 +4,22 @@ import random
 
 
 class ClosetOptimiser:
-    def __init__(self, width, height, preferences, alg_pref):
-        self.width = width
-        self.height = height
-        self.preferences = {k: v for k, v in preferences.items() if v > 0}  # Filter out zero-preference components
-        self.columns = 4
-        self.components = list(self.preferences.keys())  # Use filtered components
-        self.min_heights = {  # Minimum heights for components
+    def __init__(self, width: int, height: int, preferences: dict[str, int], alg_pref: dict[str, int]) -> None:
+        self.width: int = width
+        self.height:int = height
+        self.preferences: dict[str, int] = {k: v for k, v in preferences.items() if v > 0 or k == "shelves"}  # Filter out zero-preference components
+        self.columns: int = 4
+        self.components: list[str] = list(self.preferences.keys())  # Use filtered components
+        self.min_heights: dict[str, int] = {  # Minimum heights for components
             "shelves": 32,
             "drawers": (7*32), # 224 mm
             "short_hanging": (29*32), # 928 mm
             "long_hanging": (47*32) # 1504 mm
         }
-        self.alg_pref = alg_pref
-        self.toolbox = self.setup_toolbox()
+        self.alg_pref: dict[str, int] = alg_pref
+        self.toolbox: base.Toolbox = self.setup_toolbox()
     
-    def setup_toolbox(self):
+    def setup_toolbox(self) -> base.Toolbox:
         """Define the DEAP toolbox"""
         # Avoid overwriting exisiting class
         try:
@@ -31,10 +31,10 @@ class ClosetOptimiser:
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMax)
 
-        toolbox = base.Toolbox()
+        toolbox: base.Toolbox = base.Toolbox()
 
-        def attr_height(component):
-            min_height = self.min_heights[component]
+        def attr_height(component: str) -> int:
+            min_height: int = self.min_heights[component]
             return random.randint(0, int(self.height // min_height)) * min_height
 
         toolbox.register(
@@ -57,11 +57,11 @@ class ClosetOptimiser:
 
         return toolbox
     
-    def constrained_mutate(self, individual):
+    def constrained_mutate(self, individual: list[int]) -> tuple[list[int]]:
         for i, height in enumerate(individual):
-            component_index = i % len(self.components)
-            component = self.components[component_index]
-            min_height = self.min_heights[component]
+            component_index: int = i % len(self.components)
+            component: str = self.components[component_index]
+            min_height: int = self.min_heights[component]
 
             # Generate a new valid height as an integer multiple
             individual[i] = random.randint(0, int(self.height // min_height)) * min_height
@@ -71,41 +71,44 @@ class ClosetOptimiser:
 
         return (individual,)
 
-    def evaluate(self, individual):
+    def evaluate(self, individual: list[int]) -> int:
         """Evaluate fitness based on adherence to user preferences"""
-        fitness = 0
+        fitness: int = 0
         
         # Calculate total space taken up by component
-        total_space_used = sum(individual)
-        component_allocation = {
+        total_space_used: int = sum(individual)
+        component_allocation: dict[str: int] = {
             component: sum(individual[self.columns * i : self.columns * (i + 1)])
             for i, component in enumerate(self.components)
         }
 
         # Penalise discrepancy in component percentage
         for component, target_percentage in self.preferences.items():
-            allocated_percentage = (component_allocation[component] / (self.columns * self.height)) * 100
-            fitness -= abs(allocated_percentage - target_percentage)  # Penalise deviation
+            weight:int = 1
+            if component == "shelves" and target_percentage == 0: # penalise model if it is filling drawers in over other components
+                weight = 5
+            allocated_percentage: int = (component_allocation[component] / (self.columns * self.height)) * 100
+            fitness -= weight * abs(allocated_percentage - target_percentage)  # Penalise deviation
 
         # Ensure space does not exceed constraints and Penalise under utilisation of space
-        unused_space = (self.height * self.columns) - total_space_used
+        unused_space: int = (self.height * self.columns) - total_space_used
         if unused_space < 0:
             fitness -= 100  # Heavy penalty for exceeding space
         else:
             fitness -= unused_space / 50
 
         # Ensure space does not exceed constraints for each column
-        num_components = len(self.preferences.keys())
+        num_components: int = len(self.preferences.keys())
         for col in range(self.columns):
-            column_height = sum(individual[(col * num_components):((col + 1) * num_components)]) # [col::self.columns] seems to not work
+            column_height: int = sum(individual[(col * num_components):((col + 1) * num_components)]) # [col::self.columns] seems to not work
             if column_height > self.height:
                 fitness -= 100 + (column_height - self.height)  # Penalise exceeding column space heavily
 
         # Penalise any violation of minimum height constraint
         for col in range(self.columns):
             for comp_index, component in enumerate(self.components):
-                height = individual[col * len(self.components) + comp_index]
-                min_height = self.min_heights[component]
+                height: int = individual[col * len(self.components) + comp_index]
+                min_height: int = self.min_heights[component]
                 if height == 0:
                     pass
                 if height % min_height != 0:
@@ -113,7 +116,7 @@ class ClosetOptimiser:
 
         return fitness,
 
-    def optimise(self, population_size=None, generations=None, cxpb=0.5, mutpb=0.2):
+    def optimise(self, population_size:int=None, generations:int=None, cxpb:float=0.5, mutpb:float=0.2) -> tuple[list[int], plt.Figure]:
         if population_size is None:
             population_size = int(self.alg_pref["Population"])
         if generations is None:
@@ -121,32 +124,32 @@ class ClosetOptimiser:
         population = self.toolbox.population(n=population_size)
 
         # Statistics for tracking performance
-        stats = tools.Statistics(lambda ind: ind.fitness.values[0])
+        stats: tools.Statistics = tools.Statistics(lambda ind: ind.fitness.values[0])
         stats.register("max", max)
         stats.register("avg", lambda fits: sum(fits) / len(fits))
         
-        logbook = tools.Logbook()  # Logbook to store the evolution history
+        logbook: tools.Logbook = tools.Logbook()  # Logbook to store the evolution history
         logbook.header = ["gen", "max", "avg"]  # Columns for tracking
 
         # Evolutionary algorithm with tracking
         for gen in range(generations):
-            offspring = algorithms.varAnd(population, self.toolbox, cxpb, mutpb)
+            offspring: list = algorithms.varAnd(population, self.toolbox, cxpb, mutpb)
             fits = self.toolbox.map(self.toolbox.evaluate, offspring)
             for ind, fit in zip(offspring, fits):
                 ind.fitness.values = fit
             population[:] = self.toolbox.select(offspring, k=len(population))
             
             # Record stats for the current generation
-            record = stats.compile(population)
+            record: dict = stats.compile(population)
             logbook.record(gen=gen, **record)
         
         # Get the best solution
-        best_individual = tools.selBest(population, k=1)[0]
-        fig = self.plot_progress(logbook)
+        best_individual: list[int] = tools.selBest(population, k=1)[0]
+        fig: plt.Figure = self.plot_progress(logbook)
 
         return best_individual, fig
     
-    def plot_progress(self, logbook):
+    def plot_progress(self, logbook: tools.Logbook) -> plt.Figure:
         generations = logbook.select("gen")
         max_fitness = logbook.select("max")
         avg_fitness = logbook.select("avg")
@@ -160,9 +163,9 @@ class ClosetOptimiser:
         ax.legend(loc="best")
         ax.grid(True)
 
-        return fig  # Return the figure
+        return fig
 
-    def map_individual_to_arrangement(self, individual):
+    def map_individual_to_arrangement(self, individual: list[int]) -> dict:
         """Convert the individual into a dictionary mapping columns to components and their heights."""
         arrangement = {}
         num_components = len(self.components)
@@ -185,16 +188,16 @@ class ClosetOptimiser:
 # Example usage
 if __name__ == "__main__":
     # Closet parameters
-    WIDTH = 100  # inches
-    HEIGHT = 96  # inches
-    COLUMNS = 4
-    COMPONENTS = ["drawers", "shelves", "hanging"]
+    WIDTH: int = 100  # inches
+    HEIGHT: int = 96  # inches
+    COLUMNS: int = 4
+    COMPONENTS: list[str] = ["drawers", "shelves", "hanging"]
 
     # User preferences (% allocation)
-    preferences = {"drawers": 35, "shelves": 15, "hanging": 50}
+    preferences: dict[str: int] = {"drawers": 35, "shelves": 15, "hanging": 50}
 
-    optimizer = ClosetOptimiser(WIDTH, HEIGHT, COLUMNS, COMPONENTS, preferences)
-    best_individual = optimizer.optimise()
-    arrangement = optimizer.map_individual_to_arrangement(best_individual)
+    optimizer: ClosetOptimiser = ClosetOptimiser(WIDTH, HEIGHT, COLUMNS, COMPONENTS, preferences)
+    best_individual: tuple[list[int], plt.Figure] = optimizer.optimise()
+    arrangement: dict = optimizer.map_individual_to_arrangement(best_individual)
     # optimizer.visualise_closet(arrangement)
     plt.show()

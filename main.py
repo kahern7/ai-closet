@@ -3,6 +3,6 @@ from gui import ClosetOptimiserGUI
 import customtkinter as ctk
 
 if __name__ == "__main__":
-    root = ctk.CTk()
-    app = ClosetOptimiserGUI(root)
+    root: ctk.CTk = ctk.CTk()
+    app: ClosetOptimiserGUI = ClosetOptimiserGUI(root)
     root.mainloop()
