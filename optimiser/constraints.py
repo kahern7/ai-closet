@@ -8,6 +8,8 @@ class ClosetConstraints:
         self.components = config["components"]
         self.min_heights = config["min_heights"]
 
+    """Basic space constraints"""
+    
     def con_comp_percent_diff(self, individual: list[int]) -> int:
         """Penalise discrepancy in component percentage"""
         penalty = 0
@@ -33,8 +35,8 @@ class ClosetConstraints:
         unused_space: int = (self.height * self.columns) - total_space_used
         if unused_space < 0:
             penalty += 100  # Heavy penalty for exceeding total space
-        else:
-            penalty += unused_space / 50
+        elif unused_space > 0:
+            penalty += unused_space
         return penalty
     
     def con_exceed_col_height(self, individual: list[int]) -> int:
@@ -59,6 +61,62 @@ class ClosetConstraints:
                 elif height % min_height != 0:
                     penalty += 100
         return penalty
+    
+    """Component Constraints"""
+    
+    """Drawer constraints"""
+    def con_drawers(self, individual: list[int]) -> int:        
+        """General function for all drawer constraints"""
+        if "drawers" not in self.components: # check that drawers exist
+            return 0
+        
+        def drawer_equal_height(individual: list[int]) -> int:
+            """Ensure drawers are equal height"""
+            penalty = 0
+            drawer_heights = [d for d in individual[self.components.index("drawers")::len(self.components)] if d > 0]
+            if len(drawer_heights) > 1:
+                avg_height = sum(drawer_heights) / len(drawer_heights)
+                penalty = sum(abs(height - avg_height) for height in drawer_heights) / 10
+            return penalty
+        
+        def drawer_centre(individual: list[int]) -> int:
+            """Encourage drawers to be centred"""
+            penalty = 0
+            drawer_heights = [d for d in individual[self.components.index("drawers")::len(self.components)]]
+            # Identify columns with drawers
+            drawer_columns = [i for i, height in enumerate(drawer_heights) if height > 0]
+            
+            # ideal centred position of drawers
+            ideal_positions = []
+            num_drawer_columns = len(drawer_columns)
+            if num_drawer_columns > 0:
+                mid = self.columns // 2
+                if num_drawer_columns % 2 == 0:
+                    ideal_positions = list(range(mid - num_drawer_columns // 2, mid + num_drawer_columns // 2))
+                else:
+                    ideal_positions = list(range(mid - num_drawer_columns // 2, mid + num_drawer_columns // 2 + 1))
+            
+            # Penalise any deviation from ideal positions
+            penalty += sum(
+                10 * abs(pos - ideal_positions[i])
+                for i, pos in enumerate(sorted(drawer_columns))
+                if i < len(ideal_positions)
+            )               
+            return penalty
+        
+        penalty = 0
+        
+        penalty += drawer_equal_height(individual)
+        penalty += drawer_centre(individual)
+        
+        return penalty
+    
+    """auxiliary functions"""
+    
+    def non_zero_elements_equal(self, lst: list[int]) -> bool:
+        """Checks if non-zero elements in list are equal"""
+        non_zero_elements = [x for x in lst if x != 0]
+        return len(set(non_zero_elements)) <= 1 
     
 if __name__ == "__main__":
     pass

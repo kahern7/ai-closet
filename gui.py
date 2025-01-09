@@ -71,8 +71,8 @@ class ClosetOptimiserGUI:
 
         # Advanced settings menu and sliders
         self.advanced_frame: ctk.CTkFrame = ctk.CTkFrame(self.options_frame)
-        self.pop_size: ctk.IntVar = create_slider_with_input(self.advanced_frame, "Algorithm Population Size", 100, 5000, 100, 500)
-        self.num_gens: ctk.IntVar = create_slider_with_input(self.advanced_frame, "Algorithm Generations", 25, 500, 25, 50)
+        self.pop_size: ctk.IntVar = create_slider_with_input(self.advanced_frame, "Algorithm Population Size", 100, 5000, 100, 2000)
+        self.num_gens: ctk.IntVar = create_slider_with_input(self.advanced_frame, "Algorithm Generations", 25, 500, 25, 100)
 
         # Optimise button
         ctk.CTkButton(self.options_frame, text="Optimise Closet", command=self.run_optimisation).pack(pady=10)
