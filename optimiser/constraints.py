@@ -13,7 +13,7 @@ class ClosetConstraints:
         penalty = 0
         # Find total height (mm) in closet taken up by each component (across all 4 columns)
         component_allocation: dict[str: int] = {
-            component: sum(individual[self.columns * i : self.columns * (i + 1)])
+            component: sum(individual[i :: len(self.components)])
             for i, component in enumerate(self.components)
         }
         
