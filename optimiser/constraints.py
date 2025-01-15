@@ -83,31 +83,54 @@ class ClosetConstraints:
             """Encourage drawers to be centred"""
             penalty = 0
             drawer_heights = [d for d in individual[self.components.index("drawers")::len(self.components)]]
+            
+            # Find minimum required columns based off percentage
+            min_required_columns = ((self.columns * self.preferences["drawers"] * 2) + 99) // 100 # Ceiling division
+            
+            # ensure min required columns allow for symmetric columns
+            mid = self.columns // 2
+            if self.columns % 2 != min_required_columns % 2:
+                min_required_columns + 1
+            if self.columns % 2 == 0:
+                ideal_positions = list(range((mid - 1) - ((min_required_columns - 1) // 2), (mid + (min_required_columns - 1) // 2) + 1))
+            else:
+                ideal_positions = list(range(mid - (min_required_columns // 2), mid + (min_required_columns // 2) + 1))
+            
             # Identify columns with drawers
             drawer_columns = [i for i, height in enumerate(drawer_heights) if height > 0]
             
-            # ideal centred position of drawers
-            ideal_positions = []
-            num_drawer_columns = len(drawer_columns)
-            if num_drawer_columns > 0:
-                mid = self.columns // 2
-                if num_drawer_columns % 2 == 0:
-                    ideal_positions = list(range(mid - num_drawer_columns // 2, mid + num_drawer_columns // 2))
-                else:
-                    ideal_positions = list(range(mid - num_drawer_columns // 2, mid + num_drawer_columns // 2 + 1))
+            # Penalise for deviation from ideal positions
+            for actual_pos, ideal_pos in zip(drawer_columns, ideal_positions):
+                penalty += abs(actual_pos - ideal_pos) * 10  # Penalise misalignment
             
-            # Penalise any deviation from ideal positions
-            penalty += sum(
-                10 * abs(pos - ideal_positions[i])
-                for i, pos in enumerate(sorted(drawer_columns))
-                if i < len(ideal_positions)
-            )               
+            # Penalise extra drawer columns beyond the ideal count
+            if len(drawer_columns) > len(ideal_positions):
+                extra_drawer_columns = drawer_columns[len(ideal_positions):]
+                penalty += len(extra_drawer_columns) * 50  # Heavy penalty for additional columns
+            
             return penalty
         
+        def drawer_full_utilisation(individual: list[int]) -> int:
+            """Ensure drawers fully utilise allocated space."""
+            penalty = 0
+            drawer_heights = [individual[i::len(self.components)][self.components.index("drawers")] for i in range(self.columns)]
+            max_drawer_height_per_column = ((self.height // 2) // self.min_heights["drawers"] + 1) * self.min_heights["drawers"]
+
+            # Penalise exceeding drawer space in each drawer column
+            for height in drawer_heights:
+                if height > max_drawer_height_per_column:
+                    unused_space = height - max_drawer_height_per_column
+                    penalty += unused_space * 5  # Adjust weight as needed
+
+            return penalty
+
+        
+        # Main drawer script
         penalty = 0
         
         penalty += drawer_equal_height(individual)
         penalty += drawer_centre(individual)
+        penalty += drawer_full_utilisation(individual)
         
         return penalty
     

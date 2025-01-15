@@ -1,3 +1,5 @@
 myvenv/
 __pycache__/
 optimiser/__pycache__
+closet_optimizer.zip
+tests\closet_optimizer.zip
