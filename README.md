@@ -1,2 +1,2 @@
 # ai-closet
-Research project for implementing AI into the ClosetCAD software
+Research project for utilising ML algorithms in the ClosetCAD software
